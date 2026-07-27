@@ -1,0 +1,40 @@
+name: Temporary RVC model transfer
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Download model files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p model
+          curl --fail --location --retry 4 --retry-delay 5 \
+            --output model/alanite.pth \
+            'https://huggingface.co/kronosta/DimensionalStack-RVC/resolve/main/alanite.pth?download=true'
+          curl --fail --location --retry 4 --retry-delay 5 \
+            --output model/alanite.index \
+            'https://huggingface.co/kronosta/DimensionalStack-RVC/resolve/main/added_IVF235_Flat_nprobe_1_alanite_v2.index?download=true'
+          sha256sum model/alanite.pth model/alanite.index > model/SHA256SUMS.txt
+          printf '%s\n' 'Source: https://huggingface.co/kronosta/DimensionalStack-RVC' 'License declared by source repository: MIT' > model/SOURCE_AND_LICENSE.txt
+          test -s model/alanite.pth
+          test -s model/alanite.index
+          ls -lh model
+
+      - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Alanite-RVC-model
+          path: model
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
