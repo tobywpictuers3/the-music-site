@@ -1,18 +1,15 @@
 name: Temporary RVC model transfer
 
 on:
-  push:
+  pull_request:
     branches: [main]
-    paths-ignore:
-      - ready.json
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   package-model:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -45,22 +42,3 @@ jobs:
           if-no-files-found: error
           retention-days: 1
           compression-level: 0
-
-      - name: Publish workflow run ID
-        shell: bash
-        run: |
-          set -euo pipefail
-          printf '{"run_id":%s,"artifact_name":"Alanite-RVC-model","commit":"%s"}\n' \
-            "$GITHUB_RUN_ID" "$GITHUB_SHA" > ready.json
-          git init
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git fetch --depth=1 origin main
-          git checkout -B main FETCH_HEAD
-          cp "$GITHUB_WORKSPACE/ready.json" ready.json
-          git add ready.json
-          git commit -m 'Publish temporary RVC artifact run ID [skip ci]'
-          git push origin main
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
